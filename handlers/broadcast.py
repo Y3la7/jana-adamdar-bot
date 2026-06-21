@@ -12,7 +12,7 @@ from aiogram.types import (
 )
 
 from config import ADMIN_ID
-from database.queries import save_group, remove_group, get_all_groups
+from database.queries import save_group, remove_group, get_all_groups, update_group_thread
 
 router = Router(name="broadcast")
 
@@ -41,6 +41,35 @@ async def on_chat_member_update(event: ChatMemberUpdated) -> None:
         await remove_group(chat.id)
 
 
+# ─── Установка топика: /setthread ─────────────────────────────────────────────
+# Напиши /setthread прямо в нужном топике группы — бот запомнит его.
+
+@router.message(Command("setthread"))
+async def set_thread(message: Message) -> None:
+    chat = message.chat
+    if chat.type not in ("group", "supergroup"):
+        await message.reply("⚠️ Эта команда работает только в группах.")
+        return
+
+    thread_id = message.message_thread_id
+
+    if not thread_id:
+        await message.reply(
+            "⚠️ Эта команда должна быть отправлена <b>внутри топика</b>, "
+            "а не в общем чате группы.",
+            parse_mode="HTML",
+        )
+        return
+
+    await update_group_thread(chat.id, thread_id)
+    await message.reply(
+        f"✅ Топик сохранён!\n"
+        f"Теперь все анонсы будут приходить сюда.\n"
+        f"<code>thread_id: {thread_id}</code>",
+        parse_mode="HTML",
+    )
+
+
 # ─── Рассылка: /broadcast ─────────────────────────────────────────────────────
 
 @router.message(Command("broadcast"))
@@ -57,7 +86,10 @@ async def broadcast_start(message: Message, state: FSMContext) -> None:
         )
         return
 
-    group_list = "\n".join(f"• {g['title'] or g['chat_id']}" for g in groups)
+    group_list = "\n".join(
+        f"• {g['title'] or g['chat_id']} {'📌 топик' if g['thread_id'] else ''}"
+        for g in groups
+    )
 
     cancel_kb = ReplyKeyboardMarkup(
         keyboard=[[KeyboardButton(text="❌ Отменить")]],
@@ -93,6 +125,7 @@ async def broadcast_send(message: Message, state: FSMContext, bot: Bot) -> None:
         try:
             await bot.send_message(
                 chat_id=group["chat_id"],
+                message_thread_id=group["thread_id"],
                 text=message.text,
                 parse_mode="HTML",
             )
@@ -104,7 +137,7 @@ async def broadcast_send(message: Message, state: FSMContext, bot: Bot) -> None:
     await message.answer(
         f"✅ <b>Рассылка завершена!</b>\n\n"
         f"📨 Отправлено: <b>{sent}</b>\n"
-        f"❌ Ошибок (группа удалена из списка): <b>{failed}</b>",
+        f"❌ Ошибок: <b>{failed}</b>",
         reply_markup=ReplyKeyboardRemove(),
         parse_mode="HTML",
     )
