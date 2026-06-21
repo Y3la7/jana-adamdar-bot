@@ -297,6 +297,7 @@ async def addevent_photo(message: Message, state: FSMContext, bot: Bot) -> None:
                     from aiogram.types import FSInputFile
                     await bot.send_photo(
                         chat_id=group["chat_id"],
+                        message_thread_id=group["thread_id"],
                         photo=FSInputFile(photo_path),
                         caption=announce_text,
                         parse_mode="HTML",
@@ -304,6 +305,7 @@ async def addevent_photo(message: Message, state: FSMContext, bot: Bot) -> None:
                 else:
                     await bot.send_message(
                         chat_id=group["chat_id"],
+                        message_thread_id=group["thread_id"],
                         text=announce_text,
                         parse_mode="HTML",
                     )
