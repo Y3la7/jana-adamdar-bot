@@ -15,7 +15,7 @@ from config import BOT_TOKEN
 from database.db import init_db
 
 # ─── Импорт всех роутеров ─────────────────────────────────────────────────────
-from handlers import main_menu, who_we_are, join, events, help as help_handler, admin
+from handlers import main_menu, who_we_are, join, events, help as help_handler, admin, broadcast
 
 # Настройка логирования
 logging.basicConfig(
@@ -45,6 +45,7 @@ async def main() -> None:
     # Порядок важен: join должен идти ДО main_menu,
     # чтобы FSM-обработчики перехватывали сообщения раньше общих фильтров.
     dp.include_router(admin.router)
+    dp.include_router(broadcast.router)
     dp.include_router(join.router)
     dp.include_router(who_we_are.router)
     dp.include_router(events.router)
