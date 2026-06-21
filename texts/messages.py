@@ -115,7 +115,7 @@ EVENTS_EMPTY = (
 )
 
 EVENT_CARD = (
-    "📌 <b>{title}</b>\n\n"
+    "{status_badge}📌 <b>{title}</b>\n\n"
     "📝 {description}\n\n"
     "📅 Дата: <b>{date}</b>\n"
     "🕐 Время: <b>{time}</b>\n"
