@@ -57,7 +57,7 @@ async def get_all_members() -> list:
 
 async def get_upcoming_events() -> list:
     """
-    Возвращает предстоящие мероприятия вместе с количеством свободных мест.
+    Возвращает все активные мероприятия (статус != 'completed').
     """
     async with get_connection() as db:
         async with db.execute(
@@ -67,12 +67,27 @@ async def get_upcoming_events() -> list:
                 (e.seats - COUNT(r.id)) AS free_seats
             FROM events e
             LEFT JOIN event_registrations r ON r.event_id = e.id
+            WHERE e.status != 'completed'
             GROUP BY e.id
-            HAVING free_seats > 0 OR e.seats = 0
             ORDER BY e.date ASC, e.time ASC
             """
         ) as cursor:
             return await cursor.fetchall()
+
+
+async def complete_event(event_id: int) -> bool:
+    """Помечает мероприятие как завершённое — оно пропадает из списка."""
+    async with get_connection() as db:
+        async with db.execute(
+            "SELECT id FROM events WHERE id = ? AND status != 'completed'", (event_id,)
+        ) as cursor:
+            if not await cursor.fetchone():
+                return False
+        await db.execute(
+            "UPDATE events SET status = 'completed' WHERE id = ?", (event_id,)
+        )
+        await db.commit()
+    return True
 
 
 async def get_event_by_id(event_id: int) -> Optional[aiosqlite.Row]:
