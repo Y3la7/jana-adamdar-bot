@@ -41,6 +41,24 @@ async def on_chat_member_update(event: ChatMemberUpdated) -> None:
         await remove_group(chat.id)
 
 
+# ─── Регистрация группы вручную: /reggroup ───────────────────────────────────
+# Напиши /reggroup в нужной группе — бот сохранит её без перезахода.
+
+@router.message(Command("reggroup"))
+async def reg_group(message: Message) -> None:
+    chat = message.chat
+    if chat.type not in ("group", "supergroup"):
+        await message.reply("⚠️ Команда работает только в группах.")
+        return
+
+    await save_group(chat.id, chat.title or "")
+    await message.reply(
+        f"✅ Группа <b>{chat.title}</b> зарегистрирована!\n"
+        f"Теперь сюда будут приходить анонсы мероприятий.",
+        parse_mode="HTML",
+    )
+
+
 # ─── Установка топика: /setthread ─────────────────────────────────────────────
 # Напиши /setthread прямо в нужном топике группы — бот запомнит его.
 
