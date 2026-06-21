@@ -10,27 +10,15 @@ from config import DATABASE_PATH
 
 @asynccontextmanager
 async def get_connection():
-    """
-    Асинхронный контекстный менеджер для работы с БД.
-    Использование:
-        async with get_connection() as db:
-            ...
-    """
-    # Создаём директорию, если её нет
     os.makedirs(os.path.dirname(DATABASE_PATH), exist_ok=True)
     async with aiosqlite.connect(DATABASE_PATH) as conn:
         conn.row_factory = aiosqlite.Row
-        await conn.execute("PRAGMA journal_mode=WAL")  # Улучшает конкурентный доступ
+        await conn.execute("PRAGMA journal_mode=WAL")
         yield conn
 
 
 async def init_db() -> None:
-    """
-    Создаёт все таблицы при первом запуске бота.
-    Безопасно вызывать при каждом старте — таблицы не пересоздаются.
-    """
     async with get_connection() as db:
-        # Таблица участников движения
         await db.execute("""
             CREATE TABLE IF NOT EXISTS members (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,7 +33,6 @@ async def init_db() -> None:
             )
         """)
 
-        # Таблица мероприятий
         await db.execute("""
             CREATE TABLE IF NOT EXISTS events (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -60,7 +47,6 @@ async def init_db() -> None:
             )
         """)
 
-        # Таблица регистраций на мероприятия
         await db.execute("""
             CREATE TABLE IF NOT EXISTS event_registrations (
                 id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -69,6 +55,15 @@ async def init_db() -> None:
                 registered_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(event_id, user_id),
                 FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+            )
+        """)
+
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS groups (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                chat_id    INTEGER UNIQUE NOT NULL,
+                title      TEXT,
+                added_at   DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
 
