@@ -63,9 +63,17 @@ async def init_db() -> None:
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
                 chat_id    INTEGER UNIQUE NOT NULL,
                 title      TEXT,
+                thread_id  INTEGER DEFAULT NULL,
                 added_at   DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
+        # Добавляем thread_id если таблица уже существует без него
+        try:
+            await db.execute("ALTER TABLE groups ADD COLUMN thread_id INTEGER DEFAULT NULL")
+            await db.commit()
+        except Exception:
+            pass
 
         await db.commit()
 
