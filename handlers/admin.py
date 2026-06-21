@@ -316,6 +316,24 @@ async def addevent_photo(message: Message, state: FSMContext, bot: Bot) -> None:
         if sent:
             await message.answer(f"📨 Анонс разослан в <b>{sent}</b> групп(ы).", parse_mode="HTML")
 
+    # ─── Ссылка для WhatsApp ──────────────────────────────────────────────────
+    import urllib.parse
+    wa_text = (
+        f"📣 Новое мероприятие!\n\n"
+        f"📌 {data['title']}\n\n"
+        f"📝 {data['description']}\n\n"
+        f"📅 Дата: {data['date']}\n"
+        f"🕐 Время: {data['time']}\n"
+        f"📍 Место: {data['location']}\n"
+        f"👥 Мест: {seats_text}"
+    )
+    wa_link = f"https://wa.me/?text={urllib.parse.quote(wa_text)}"
+    await message.answer(
+        f"📲 <b>Отправить в WhatsApp:</b>\n{wa_link}",
+        parse_mode="HTML",
+        disable_web_page_preview=True,
+    )
+
 
 # ─── Список групп ─────────────────────────────────────────────────────────────
 
