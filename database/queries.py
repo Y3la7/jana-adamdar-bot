@@ -165,3 +165,34 @@ async def get_event_registrations_count(event_id: int) -> int:
         ) as cursor:
             row = await cursor.fetchone()
             return row[0] if row else 0
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  ГРУППЫ
+# ═══════════════════════════════════════════════════════════════════════════════
+
+async def save_group(chat_id: int, title: str) -> None:
+    """Сохраняет группу в БД (или обновляет название если уже есть)."""
+    async with get_connection() as db:
+        await db.execute(
+            """
+            INSERT INTO groups (chat_id, title) VALUES (?, ?)
+            ON CONFLICT(chat_id) DO UPDATE SET title = excluded.title
+            """,
+            (chat_id, title),
+        )
+        await db.commit()
+
+
+async def remove_group(chat_id: int) -> None:
+    """Удаляет группу из БД (бота кикнули)."""
+    async with get_connection() as db:
+        await db.execute("DELETE FROM groups WHERE chat_id = ?", (chat_id,))
+        await db.commit()
+
+
+async def get_all_groups() -> list:
+    """Возвращает все сохранённые группы."""
+    async with get_connection() as db:
+        async with db.execute("SELECT chat_id, title FROM groups ORDER BY added_at DESC") as cursor:
+            return await cursor.fetchall()
