@@ -11,7 +11,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 
 from config import ADMIN_ID, DATABASE_PATH
-from database.queries import get_all_members, get_upcoming_events, get_event_registrations_count, add_event
+from database.queries import get_all_members, get_upcoming_events, get_event_registrations_count, add_event, get_all_groups, remove_group
 from states.add_event_states import AddEvent
 
 router = Router(name="admin")
@@ -275,6 +275,44 @@ async def addevent_photo(message: Message, state: FSMContext, bot: Bot) -> None:
         reply_markup=ReplyKeyboardRemove(),
         parse_mode="HTML",
     )
+
+    # ─── Рассылаем анонс мероприятия во все группы ───────────────────────────
+    groups = await get_all_groups()
+    if groups:
+        announce_text = (
+            f"📣 <b>Новое мероприятие!</b>\n\n"
+            f"📌 <b>{data['title']}</b>\n\n"
+            f"📝 {data['description']}\n\n"
+            f"📅 Дата: <b>{data['date']}</b>\n"
+            f"🕐 Время: <b>{data['time']}</b>\n"
+            f"📍 Место: <b>{data['location']}</b>\n"
+            f"👥 Мест: <b>{seats_text}</b>"
+        )
+
+        sent = 0
+        for group in groups:
+            try:
+                if photo_filename:
+                    photo_path = os.path.join(IMAGES_DIR, photo_filename)
+                    from aiogram.types import FSInputFile
+                    await bot.send_photo(
+                        chat_id=group["chat_id"],
+                        photo=FSInputFile(photo_path),
+                        caption=announce_text,
+                        parse_mode="HTML",
+                    )
+                else:
+                    await bot.send_message(
+                        chat_id=group["chat_id"],
+                        text=announce_text,
+                        parse_mode="HTML",
+                    )
+                sent += 1
+            except Exception:
+                await remove_group(group["chat_id"])
+
+        if sent:
+            await message.answer(f"📨 Анонс разослан в <b>{sent}</b> групп(ы).", parse_mode="HTML")
 
 
 # ─── Список команд администратора ─────────────────────────────────────────────
