@@ -43,9 +43,16 @@ async def init_db() -> None:
                 location    TEXT NOT NULL,
                 photo       TEXT,
                 seats       INTEGER NOT NULL DEFAULT 0,
+                status      TEXT NOT NULL DEFAULT 'active',
                 created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
+        try:
+            await db.execute("ALTER TABLE events ADD COLUMN status TEXT NOT NULL DEFAULT 'active'")
+            await db.commit()
+        except Exception:
+            pass
 
         await db.execute("""
             CREATE TABLE IF NOT EXISTS event_registrations (
