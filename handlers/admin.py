@@ -317,6 +317,34 @@ async def addevent_photo(message: Message, state: FSMContext, bot: Bot) -> None:
             await message.answer(f"📨 Анонс разослан в <b>{sent}</b> групп(ы).", parse_mode="HTML")
 
 
+# ─── Список групп ─────────────────────────────────────────────────────────────
+
+@router.message(Command("listgroups"))
+async def list_groups(message: Message) -> None:
+    if not is_admin(message):
+        return
+
+    groups = await get_all_groups()
+
+    if not groups:
+        await message.answer(
+            "📭 <b>Нет зарегистрированных групп.</b>\n\n"
+            "Зайди в группу и напиши <code>/reggroup</code> — бот её запомнит.",
+            parse_mode="HTML",
+        )
+        return
+
+    lines = []
+    for g in groups:
+        thread = f" → топик {g['thread_id']}" if g["thread_id"] else ""
+        lines.append(f"• <b>{g['title'] or 'без названия'}</b>{thread}\n  <code>{g['chat_id']}</code>")
+
+    await message.answer(
+        f"📋 <b>Зарегистрированные группы ({len(groups)}):</b>\n\n" + "\n\n".join(lines),
+        parse_mode="HTML",
+    )
+
+
 # ─── Список команд администратора ─────────────────────────────────────────────
 
 @router.message(Command("admin"))
@@ -333,7 +361,13 @@ async def admin_help(message: Message) -> None:
         "📅 <b>Добавить мероприятие</b>\n"
         "<code>/addevent</code> — пошаговая форма\n\n"
         "📊 <b>Статистика</b>\n"
-        "<code>/stats</code> — число заявок и мероприятий\n"
+        "<code>/stats</code> — число заявок и мероприятий\n\n"
+        "👥 <b>Группы</b>\n"
+        "<code>/listgroups</code> — список групп\n"
+        "<code>/broadcast</code> — рассылка во все группы\n\n"
+        "В группе:\n"
+        "<code>/reggroup</code> — зарегистрировать группу\n"
+        "<code>/setthread</code> — привязать топик (внутри топика)\n"
     )
 
     await message.answer(text=text, parse_mode="HTML")
