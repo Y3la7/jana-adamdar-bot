@@ -194,5 +194,15 @@ async def remove_group(chat_id: int) -> None:
 async def get_all_groups() -> list:
     """Возвращает все сохранённые группы."""
     async with get_connection() as db:
-        async with db.execute("SELECT chat_id, title FROM groups ORDER BY added_at DESC") as cursor:
+        async with db.execute("SELECT chat_id, title, thread_id FROM groups ORDER BY added_at DESC") as cursor:
             return await cursor.fetchall()
+
+
+async def update_group_thread(chat_id: int, thread_id: int) -> None:
+    """Сохраняет ID топика для группы."""
+    async with get_connection() as db:
+        await db.execute(
+            "UPDATE groups SET thread_id = ? WHERE chat_id = ?",
+            (thread_id, chat_id),
+        )
+        await db.commit()
