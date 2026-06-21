@@ -11,7 +11,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 
 from config import ADMIN_ID, DATABASE_PATH
-from database.queries import get_all_members, get_upcoming_events, get_event_registrations_count, add_event, get_all_groups, remove_group
+from database.queries import get_all_members, get_upcoming_events, get_event_registrations_count, add_event, get_all_groups, remove_group, complete_event
 from states.add_event_states import AddEvent
 
 router = Router(name="admin")
@@ -333,6 +333,42 @@ async def addevent_photo(message: Message, state: FSMContext, bot: Bot) -> None:
         parse_mode="HTML",
         disable_web_page_preview=True,
     )
+
+
+# ─── Завершить мероприятие: /endevent <id> ────────────────────────────────────
+
+@router.message(Command("endevent"))
+async def end_event(message: Message) -> None:
+    if not is_admin(message):
+        return
+
+    parts = message.text.strip().split()
+    if len(parts) < 2 or not parts[1].isdigit():
+        events = await get_upcoming_events()
+        if not events:
+            await message.answer("📭 Нет активных мероприятий.", parse_mode="HTML")
+            return
+        lines = [f"• ID <code>{e['id']}</code> — <b>{e['title']}</b> ({e['date']})" for e in events]
+        await message.answer(
+            "📋 <b>Активные мероприятия:</b>\n\n" + "\n".join(lines) +
+            "\n\nИспользование: <code>/endevent ID</code>",
+            parse_mode="HTML",
+        )
+        return
+
+    event_id = int(parts[1])
+    success = await complete_event(event_id)
+
+    if success:
+        await message.answer(
+            f"✅ Мероприятие <b>ID {event_id}</b> завершено и убрано из списка.",
+            parse_mode="HTML",
+        )
+    else:
+        await message.answer(
+            f"⚠️ Мероприятие с ID <code>{event_id}</code> не найдено или уже завершено.",
+            parse_mode="HTML",
+        )
 
 
 # ─── Список групп ─────────────────────────────────────────────────────────────
